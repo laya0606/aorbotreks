@@ -131,7 +131,8 @@
         <div class="col-lg-6">
             <div class="card shadow-sm p-4">
                 <h2 class="mb-3">Get answers to your Questions</h2>
-                <form id="contactForm" method="post" novalidate>
+                <form id="contactForm" method="post" action="{% url 'contact' %}" novalidate>
+
                     {% csrf_token %}
                     <!-- Name -->
                     <div class="mb-2">
@@ -142,18 +143,13 @@
                     </div>
 
                     <!-- Email -->
-                   <div class="mb-2">
+                    <div class="mb-2">
                         <label for="email" class="form-label">Email</label>
-                        <input
-                            type="email"
-                            class="form-control"
-                            id="email"
-                            name="email"
-                            required
-                        >
-                        <div class="invalid-feedback">Enter a valid email address.</div>
+                        <input type="email" class="form-control" id="email" name="email"
+                            pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
+                            title="Enter a valid Gmail address (example@gmail.com)" required>
+                        <div class="invalid-feedback">Enter a valid Gmail address.</div>
                     </div>
-
 
                     <!-- Mobile -->
                     <div class="mb-2">
@@ -185,11 +181,11 @@
                         <div class="invalid-feedback">Message must be between 10–500 characters.</div>
                     </div>
 
-                    <!-- Global message -->
-                    <div id="form-message" class="form-message alert" role="alert"></div>
-
                     <div class="text-center">
-                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span id="btnText">Submit</span>
+                        </button>
+                        <p id="formMessage" class="form-message"></p>
                     </div>
                 </form>
 
@@ -305,78 +301,114 @@
 </main>
 {% endblock %}
 {% block extra_js %}
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const contactForm = document.getElementById('contactForm');
-    const formMessage = document.getElementById('form-message');
-    const emailField = document.getElementById('email');
+document.addEventListener("DOMContentLoaded", function () {
 
-    contactForm.addEventListener('submit', function (e) {
+    const contactForm = document.getElementById("contactForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+    const formMessage = document.getElementById("formMessage");
+    const emailField = document.getElementById("email");
+
+    // 🔹 Live Gmail validation
+    emailField.addEventListener("input", function () {
+        const email = emailField.value.trim().toLowerCase();
+        emailField.setCustomValidity(
+            email && !email.endsWith("@gmail.com")
+                ? "Only Gmail addresses ending with @gmail.com are allowed."
+                : ""
+        );
+    });
+
+    // 🔹 CSRF helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // 🔹 Submit handler
+    contactForm.addEventListener("submit", async function (e) {
         e.preventDefault();
 
+        // Prevent double submit
+        if (submitBtn.disabled) return;
+
+        // HTML5 validation
         if (!contactForm.checkValidity()) {
-            contactForm.classList.add('was-validated');
+            contactForm.classList.add("was-validated");
             return;
         }
 
-        grecaptcha.ready(function () {
-            grecaptcha.execute('{{ RECAPTCHA_SITE_KEY }}', { action: 'contact_form' })
-                .then(async function (token) {
+        const csrftoken = getCookie("csrftoken");
+        const formData = new FormData(contactForm);
 
-                    function getCookie(name) {
-                        let cookieValue = null;
-                        if (document.cookie) {
-                            document.cookie.split(';').forEach(cookie => {
-                                cookie = cookie.trim();
-                                if (cookie.startsWith(name + '=')) {
-                                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                                }
-                            });
-                        }
-                        return cookieValue;
-                    }
+        // UI state
+        submitBtn.disabled = true;
+        btnText.innerText = "Submitting...";
+        formMessage.style.display = "none";
 
-                    const csrftoken = getCookie('csrftoken');
+        try {
+            const response = await fetch(contactForm.action, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrftoken
+                },
+                body: formData
+            });
 
-                    const formData = {
-                        name: document.getElementById('name').value,
-                        email: emailField.value,
-                        mobile: document.getElementById('mobile').value,
-                        userType: document.getElementById('userType').value,
-                        comment: document.getElementById('comment').value,
-                        recaptcha_token: token   // ✅ IMPORTANT
-                    };
+            let result = {};
+            const contentType = response.headers.get("Content-Type") || "";
+            if (contentType.includes("application/json")) {
+                result = await response.json();
+            }
 
-                    try {
-                        const response = await fetch('{% url "contact" %}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': csrftoken
-                            },
-                            body: JSON.stringify(formData)
-                        });
+            if (response.ok) {
+                const successMsg = result.message || "Message sent successfully ✅";
 
-                        const result = await response.json();
+                btnText.innerText = successMsg;
+                formMessage.innerText = successMsg;
+                formMessage.className = "form-message success";
+                formMessage.style.display = "block";
 
-                        if (response.ok) {
-                            formMessage.className = 'alert alert-success';
-                            formMessage.innerHTML = "✅ Thank you! Your message has been sent successfully.";
-                            formMessage.style.display = 'block';
-                            contactForm.reset();
-                        } else {
-                            throw new Error(result.error || "Submission failed");
-                        }
-                    } catch (error) {
-                        formMessage.className = 'alert alert-danger';
-                        formMessage.innerHTML = "❌ Verification failed. Please try again.";
-                        formMessage.style.display = 'block';
-                    }
-                });
-        });
+                contactForm.reset();
+                contactForm.classList.remove("was-validated");
+
+            } else {
+                const errorMsg = result.error || "Submission failed ❌";
+
+                btnText.innerText = errorMsg;
+                formMessage.innerText = errorMsg;
+                formMessage.className = "form-message error";
+                formMessage.style.display = "block";
+            }
+
+        } catch (error) {
+            console.error(error);
+
+            btnText.innerText = "Network error ❌";
+            formMessage.innerText = "Network error ❌";
+            formMessage.className = "form-message error";
+            formMessage.style.display = "block";
+        }
+
+        // Revert button after 2s
+        setTimeout(() => {
+            btnText.innerText = "Submit";
+            submitBtn.disabled = false;
+        }, 2000);
     });
 });
 </script>
-
 {% endblock %}

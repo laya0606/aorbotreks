@@ -26,18 +26,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG  = 'True'
-
 # ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,aorbotreks.com,aorbotreks.onrender.com').split(',')
 
-DEBUG = True
+DEBUG = True 
 
 ALLOWED_HOSTS = ["*"]  # allows all hosts for testing
 CSRF_TRUSTED_ORIGINS = [
-    "https://aorbotreksweb.onrender.com",
+    "https://*.ngrok-free.app",
     "https://aorbotreks.com",
     "https://www.aorbotreks.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
 # Security settings for HTTPS
@@ -172,23 +171,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Password Reset Customization
 PASSWORD_RESET_FORM = 'treks_app.forms.CustomPasswordResetForm'
 
-# Email settings for password reset
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Use ConsoleBackend for development
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # Use this for production
-# EMAIL_HOST = 'your_smtp_host'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'your_email'
-# EMAIL_HOST_PASSWORD = 'your_email_password'
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.zoho.in"
-EMAIL_PORT = 465
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = "hello@aorbotreks.com"
-EMAIL_HOST_PASSWORD = "T7FrrY9dJfAW" 
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -231,8 +223,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://aorbotreks.com",
     "https://www.aorbotreks.com",
     "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "https://aorbotreksweb.onrender.com"
+    "http://127.0.0.1:8001",
+    "https://*.ngrok-free.app"
 ]
 
 REST_FRAMEWORK = {
@@ -249,73 +241,7 @@ REST_FRAMEWORK = {
     }
 }
 
-# # CSP settings
-# CONTENT_SECURITY_POLICY = {
-#     'DIRECTIVES': {
-#         'base-uri': ("'self'",),
-#         'connect-src': (
-#             "'self'",
-#             'https://aorbotreks.com',
-#             'https://www.aorbotreks.com',
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#         'default-src': (
-#             "'self'",
-#             "'unsafe-inline'",
-#             "'unsafe-eval'",
-#             "https://google.com",
-#             'https://fonts.googleapis.com',
-#             'https://fonts.gstatic.com',
-#             'https://cdn.jsdelivr.net',
-#             'https://aorbotreks.com',
-#             'https://www.aorbotreks.com',
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#         'font-src': (
-#             "'self'",
-#             'https://fonts.gstatic.com',
-#             "https://google.com",
-#             'https://aorbotreks.com',
-#             'https://www.aorbotreks.com',
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#         'form-action': ("'self'",),
-#         'frame-ancestors': ("'self'",),
-#         'img-src': (
-#             "'self'",
-#             'data:',
-#             'https://aorbotreks.com',
-#             'https://google.com',
-#             'https://www.aorbotreks.com',
-#             "https://xsconhhzyaiowokwsqne.supabase.co",
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#         'object-src': ("'none'",),
-#         'script-src': (
-#             "'self'",
-#             "'unsafe-inline'",
-#             "'unsafe-eval'",
-#             'https://cdn.jsdelivr.net',
-#             'https://www.google.com',
-#             'https://www.gstatic.com',
-#             'https://aorbotreks.com',
-#             'https://www.aorbotreks.com',
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#         'style-src': (
-#             "'self'",
-#             "'unsafe-inline'",
-#             'https://fonts.googleapis.com',
-#             'https://cdn.jsdelivr.net',
-#             'https://google.com',
-#             'https://www.gstatic.com',
-#             'https://aorbotreks.com',
-#             'https://www.aorbotreks.com',
-#             "https://aorbotreksweb.onrender.com"
-#         ),
-#     }
-# }
-# CSP settings
+
 CONTENT_SECURITY_POLICY = {
     'DIRECTIVES': {
         'base-uri': ("'self'",),
@@ -324,8 +250,7 @@ CONTENT_SECURITY_POLICY = {
             "'self'",
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com",
-            # 🔽 added for reCAPTCHA / Google
+            "https://*.ngrok-free.app",
             'https://www.google.com',
             'https://www.gstatic.com',
         ),
@@ -340,7 +265,7 @@ CONTENT_SECURITY_POLICY = {
             'https://cdn.jsdelivr.net',
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com"
+            "https://*.ngrok-free.app"
         ),
 
         'font-src': (
@@ -349,14 +274,12 @@ CONTENT_SECURITY_POLICY = {
             "https://google.com",
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com"
+            "https://*.ngrok-free.app"
         ),
 
         'form-action': ("'self'",),
 
         'frame-ancestors': ("'self'",),
-
-        # 🔽 REQUIRED for reCAPTCHA iframe
         'frame-src': (
             "'self'",
             'https://www.google.com',
@@ -369,8 +292,7 @@ CONTENT_SECURITY_POLICY = {
             'https://google.com',
             'https://www.aorbotreks.com',
             "https://xsconhhzyaiowokwsqne.supabase.co",
-            "https://aorbotreksweb.onrender.com",
-            # 🔽 added
+            "https://*.ngrok-free.app",
             'https://www.gstatic.com',
         ),
 
@@ -385,10 +307,9 @@ CONTENT_SECURITY_POLICY = {
             'https://www.gstatic.com',
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com"
+            "https://*.ngrok-free.app"
         ),
-
-        # 🔽 REQUIRED for external Google scripts
+        
         'script-src-elem': (
             "'self'",
             'https://cdn.jsdelivr.net',
@@ -396,7 +317,7 @@ CONTENT_SECURITY_POLICY = {
             'https://www.gstatic.com',
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com"
+            "https://*.ngrok-free.app"
         ),
 
         'style-src': (
@@ -408,72 +329,11 @@ CONTENT_SECURITY_POLICY = {
             'https://www.gstatic.com',
             'https://aorbotreks.com',
             'https://www.aorbotreks.com',
-            "https://aorbotreksweb.onrender.com"
+            "https://*.ngrok-free.app"
         ),
     }
 }
 
-
-# CONTENT_SECURITY_POLICY = {
-#     "DIRECTIVES": {
-#         "default-src": (
-#             "'self'",
-#         ),
-
-#         "script-src": (
-#             "'self'",
-#             "'unsafe-inline'",
-#             "'unsafe-eval'",
-#             "https://cdn.jsdelivr.net",
-#             "https://www.google.com",
-#             "https://www.gstatic.com",
-#             "https://www.googletagmanager.com",
-#         ),
-
-#         "script-src-elem": (
-#             "'self'",
-#             "https://cdn.jsdelivr.net",
-#             "https://www.google.com",
-#             "https://www.gstatic.com",
-#             "https://www.googletagmanager.com",
-#         ),
-
-#         "connect-src": (
-#             "'self'",
-#             "https://www.google.com",
-#             "https://www.gstatic.com",
-#             "https://www.googletagmanager.com",
-#             "https://cdn.jsdelivr.net",
-#         ),
-
-#         "frame-src": (
-#             "'self'",
-#             "https://www.google.com",
-#         ),
-
-#         "img-src": (
-#             "'self'",
-#             "data:",
-#             "https://www.google.com",
-#             "https://www.gstatic.com",
-#         ),
-
-#         "font-src": (
-#             "'self'",
-#             "https://fonts.gstatic.com",
-#         ),
-
-#         "style-src": (
-#             "'self'",
-#             "'unsafe-inline'",
-#             "https://fonts.googleapis.com",
-#             "https://cdn.jsdelivr.net",
-#         ),
-#     }
-# }
-
-
-# Add localhost entries only in DEBUG mode
 if DEBUG:
     for directive in ["script-src", "style-src", "img-src", "font-src", "connect-src"]:
         CONTENT_SECURITY_POLICY["DIRECTIVES"][directive] += ("http://localhost:8000",)
@@ -484,9 +344,3 @@ SIMPLE_JWT = {
 
 
 
-if DEBUG:
-    RECAPTCHA_SITE_KEY = "6LcC-EMsAAAAADQmEzaoaxCBKvNPXul5IkJfTdtY"
-    RECAPTCHA_SECRET_KEY = "6LcC-EMsAAAAACb56O7o2J3tG-aF6jPrncYrwzv1"
-else:
-    RECAPTCHA_SITE_KEY = "6Leb0z4sAAAAAIOdUq3ieM_rGxqcGq9x-vQbH-21"
-    RECAPTCHA_SECRET_KEY = "6Leb0z4sAAAAAO6--fw7gFvGW3DtiKPZG9CUTFwm"

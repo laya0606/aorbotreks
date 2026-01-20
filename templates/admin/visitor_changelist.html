@@ -1,0 +1,32 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+{{ block.super }}
+
+<div class="module" style="margin-top:2em; padding:1em; border:1px solid #ccc; background:#f9f9f9;">
+  <h2>Visitor Stats</h2>
+  <p><strong>Total visitors:</strong> {{ total_visitors }}</p>
+  <p><strong>Unique sessions:</strong> {{ unique_sessions }}</p>
+  <p><strong>Today's unique sessions:</strong> {{ today_unique }}</p>
+
+  <h3>Last 14 days unique sessions</h3>
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="border-bottom:1px solid #ccc; padding:0.5em;">Date</th>
+        <th style="border-bottom:1px solid #ccc; padding:0.5em;">Unique Sessions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for day in daily_unique %}
+      <tr>
+        <td style="border-bottom:1px solid #eee; padding:0.5em;">{{ day.day }}</td>
+        <td style="border-bottom:1px solid #eee; padding:0.5em;">{{ day.unique }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="2">No data available</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

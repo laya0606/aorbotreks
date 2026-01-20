@@ -453,12 +453,18 @@ class TrekList(models.Model):
     id = models.SlugField(primary_key=True, editable=False)
     name = models.CharField(max_length=200)
     state = models.CharField(max_length=100, blank=True, null=True)
+    is_pinned = models.BooleanField(default=False)
+    pin_priority = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Lower number = higher priority (1 comes first)"
+    )
     image = models.CharField(max_length=500, blank=True, null=True)
     hero_image = models.CharField(max_length=500, blank=True, null=True)
     duration_days = models.CharField(max_length=100, blank=True, null=True)
     price_start = models.PositiveIntegerField(blank=True, null=True)
     currency = models.CharField(max_length=10, default="INR")
-    operating_days = models.CharField(max_length=200, blank=True, null=True)
+    operating_days = models.CharField(max_length=200, blank=True, null=True, )
 
     tags = models.ManyToManyField(Tag, blank=True)
     operators = models.ManyToManyField(Operator, blank=True)

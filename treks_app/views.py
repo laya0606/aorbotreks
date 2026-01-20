@@ -14,46 +14,8 @@ from django.utils.html import strip_tags
 from datetime import datetime
 import requests
 from django.conf import settings
-
-@api_view(['POST'])
-@throttle_classes([AnonRateThrottle, UserRateThrottle])
-def contact_submit(request):
-    try:
-        # Get data from POST request
-        if request.content_type == 'application/json':
-            data = json.loads(request.body)
-            name = data.get('name')
-            email = data.get('email')
-            mobile = data.get('mobile')
-            user_type = data.get('userType')
-            comment = data.get('comment')
-        else:
-            # Handle form data
-            name = request.POST.get('name')
-            email = request.POST.get('email')
-            mobile = request.POST.get('mobile')
-            user_type = request.POST.get('userType')
-            comment = request.POST.get('comment')
-        
-        # Validate required fields
-        if not all([name, email, mobile, comment]):
-            return JsonResponse({'error': 'All fields are required'}, status=400)
-            
-        # Create a new Contact object
-        contact = Contact(
-            name=name,
-            email=email,
-            mobile=mobile,
-            user_type=user_type,
-            comment=comment
-        )
-        contact.save()
-        
-        return JsonResponse({'message': 'Contact form submitted successfully'}, status=200)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+from itertools import chain
+from django.db.models import Case, When, IntegerField
     
 from .models import (
     Contact, Blog, TrekCategory, TrekOrganizer, Trek, 
@@ -62,37 +24,32 @@ from .models import (
 )
 
 
-# Create your views here.
-# def home(request):
-#     featured_treks = Trek.objects.filter(is_featured=True)[:6]
-#     featured_testimonials = Testimonial.objects.filter(is_featured=True)[:6]
-#     featured_blogs = Blog.objects.filter(is_featured=True)[:3]
-#     banners = HomepageBanner.objects.filter(is_active=True).order_by('order')
-#     faqs = FAQ.objects.all().order_by('category', 'order')
-#     whats_new = WhatsNew.objects.all().order_by('-created_at')[:5]
-#     top_treks = TopTrek.objects.all()[:6]
 
-    
-#     faq_categories = {}
-#     for faq in faqs:
-#         if faq.category not in faq_categories:
-#             faq_categories[faq.category] = []
-#         faq_categories[faq.category].append(faq)
-    
-#     context = {
-#         'featured_treks': featured_treks,
-#         'featured_testimonials': featured_testimonials,
-#         'featured_blogs': featured_blogs,
-#         'banners': banners,
-#         'faq_categories': faq_categories,
-#         'whats_new': whats_new,
-#         'top_treks': top_treks,
-#     }
-#     return render(request, 'index.html', context)
+def get_featured_treks():
+    return TrekList.objects.annotate(
+        pin_order=Case(
+            When(is_pinned=True, then=0),
+            default=1,
+            output_field=IntegerField()
+        )
+    ).order_by(
+        'pin_order',
+        'pin_priority',
+        '-created_at'
+    )
+
+from django.core.paginator import Paginator
 
 def home(request):
-    featured_treks = TrekList.objects.all().order_by("-created_at")
-    
+    all_featured_treks = get_featured_treks()
+
+    paginator = Paginator(all_featured_treks, 8)
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.page(page_number)
+    except Exception:
+        page_obj = paginator.page(1)
+    page_obj = paginator.get_page(page_number)
     featured_testimonials = Testimonial.objects.filter(is_featured=True)[:6]
     featured_blogs = Blog.objects.filter(is_featured=True)[:3]
     banners = HomepageBanner.objects.filter(is_active=True).order_by('order')
@@ -105,7 +62,9 @@ def home(request):
         faq_categories.setdefault(faq.category, []).append(faq)
 
     context = {
-        'featured_treks': featured_treks,   # ✅ NOW CORRECT
+        'featured_treks': page_obj.object_list,
+        'page_obj': page_obj,
+
         'featured_testimonials': featured_testimonials,
         'featured_blogs': featured_blogs,
         'banners': banners,
@@ -113,18 +72,8 @@ def home(request):
         'whats_new': whats_new,
         'top_treks': top_treks,
     }
+
     return render(request, 'index.html', context)
-
-# def home(request):
-#     whats_new = WhatsNew.objects.all().order_by('-created_at')[:5]
-#     top_treks = TopTrek.objects.all()[:]
-
-#     context = {
-#         'whats_new': whats_new,
-#         'top_treks': top_treks,
-#     }
-#     return render(request, 'test.html', context)
-
 
 def about(request):
     team_members = TeamMember.objects.all().order_by('order')
@@ -202,263 +151,60 @@ def safety(request):
     }
     return render(request, 'safety.html', context)
 
-# def contact(request):
-#     if request.method == "GET":
-#         return render(request, "contact.html")
-
-#     # POST → handle form submit
-#     if request.method != "POST":
-#         return JsonResponse({"error": "Invalid request"}, status=405)
-
-#     try:
-#         data = json.loads(request.body)
-
-#         name = data.get("name", "").strip()
-#         email_addr = data.get("email", "").strip()
-#         mobile = data.get("mobile", "").strip()
-#         user_type = data.get("userType", "").strip()
-#         message = data.get("comment", "").strip()
-
-#         if not all([name, email_addr, mobile, user_type, message]):
-#             return JsonResponse(
-#                 {"error": "Please fill all required fields ❌"},
-#                 status=400
-#             )
-
-#         admin_subject = f"New Contact Enquiry from {name}"
-#         admin_message = (
-#             f"Name: {name}\n"
-#             f"Email: {email_addr}\n"
-#             f"Mobile: {mobile}\n"
-#             f"I am a: {user_type}\n\n"
-#             f"Message:\n{message}"
-#         )
-
-#         # Send admin mail
-#         send_mail(
-#             subject=admin_subject,
-#             message=admin_message,
-#             from_email="Aorbo Treks <hello@aorbotreks.com>",  
-#             recipient_list=["hello@aorbotreks.com"],
-#             fail_silently=False,
-#         )
-
-
-#         # Auto-reply mail
-#         ctx = {
-#             "name": name,
-#             "email_addr": email_addr,   
-#             "current_year": datetime.now().year,
-#             "cta_url": "https://aorbotreks.com",
-#             "cta_label": "Visit Our Website",
-#         }
-
-#         html_content = render_to_string("treks_app/mail.html", ctx)
-#         text_content = strip_tags(html_content)
-
-#         reply = EmailMultiAlternatives(
-#             subject="Thank you for contacting us!",
-#             body=text_content,
-#             from_email="Aorbo Treks <hello@aorbotreks.com>",  
-#             to=[email_addr],
-#         )
-
-#         reply.attach_alternative(html_content, "text/html")
-#         reply.send()
-
-#         return JsonResponse({"message": "Message sent successfully ✅"})
-
-#     except Exception as e:
-#         return JsonResponse(
-#             {"error": f"Failed to submit form: {str(e)}"},
-#             status=500
-#         )
-
-# def contact(request):
-#     if request.method == "GET":
-#         return render(
-#             request,
-#             "contact.html",
-#             {
-#                 "RECAPTCHA_SITE_KEY": settings.RECAPTCHA_SITE_KEY
-#             }
-#         )
-#     if request.method != "POST":
-#         return JsonResponse({"error": "Invalid request"}, status=405)
-
-#     try:
-#         data = json.loads(request.body or "{}")
-
-#         name = data.get("name", "").strip()
-#         email_addr = data.get("email", "").strip()
-#         mobile = data.get("mobile", "").strip()
-#         user_type = data.get("userType", "").strip()
-#         message = data.get("comment", "").strip()
-#         recaptcha_token = data.get("recaptcha_token")
-#         if not all([name, email_addr, mobile, user_type, message, recaptcha_token]):
-#             return JsonResponse(
-#                 {"error": "Please fill all required fields ❌"},
-#                 status=400
-#             )
-#         recaptcha_response = requests.post(
-#             "https://www.google.com/recaptcha/api/siteverify",
-#             data={
-#                 "secret": settings.RECAPTCHA_SECRET_KEY,
-#                 "response": recaptcha_token
-#             },
-#             timeout=5
-#         )
-
-#         recaptcha_result = recaptcha_response.json()
-
-#         if (
-#             not recaptcha_result.get("success")
-#             or recaptcha_result.get("score", 0) < 0.5
-#         ):
-#             return JsonResponse(
-#                 {"error": "reCAPTCHA verification failed ❌"},
-#                 status=400
-#             )
-
-#         admin_subject = f"New Contact Enquiry from {name}"
-#         admin_message = (
-#             f"Name: {name}\n"
-#             f"Email: {email_addr}\n"
-#             f"Mobile: {mobile}\n"
-#             f"I am a: {user_type}\n\n"
-#             f"Message:\n{message}"
-#         )
-
-#         send_mail(
-#             subject=admin_subject,
-#             message=admin_message,
-#             from_email="Aorbo Treks <hello@aorbotreks.com>",
-#             recipient_list=["hello@aorbotreks.com"],
-#             fail_silently=False,
-#         )
-#         ctx = {
-#             "name": name,
-#             "email_addr": email_addr,
-#             "current_year": datetime.now().year,
-#             "cta_url": "https://aorbotreks.com",
-#             "cta_label": "Visit Our Website",
-#         }
-
-#         html_content = render_to_string("treks_app/mail.html", ctx)
-#         text_content = strip_tags(html_content)
-
-#         reply = EmailMultiAlternatives(
-#             subject="Thank you for contacting us!",
-#             body=text_content,
-#             from_email="Aorbo Treks <hello@aorbotreks.com>",
-#             to=[email_addr],
-#         )
-#         reply.attach_alternative(html_content, "text/html")
-#         reply.send()
-#         return JsonResponse({"success": True})
-
-#     except json.JSONDecodeError:
-#         return JsonResponse(
-#             {"error": "Invalid JSON payload ❌"},
-#             status=400
-#         )
-
-#     except Exception as e:
-#         return JsonResponse(
-#             {"error": f"Failed to submit form: {str(e)}"},
-#             status=500
-#         )
-
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.conf import settings
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from datetime import datetime
-import json
-import requests
-
-
 def contact(request):
-    # -------- GET --------
     if request.method == "GET":
-        return render(
-            request,
-            "contact.html",
-            {"RECAPTCHA_SITE_KEY": settings.RECAPTCHA_SITE_KEY},
-        )
+        return render(request, "contact.html")
 
-    # -------- ONLY POST --------
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=405)
 
     try:
-        data = json.loads(request.body or "{}")
+        # ✅ READ FORM DATA (NOT JSON)
+        name = request.POST.get("name", "").strip()
+        email_addr = request.POST.get("email", "").strip()
+        mobile = request.POST.get("mobile", "").strip()
+        user_type = request.POST.get("userType", "").strip()
+        message = request.POST.get("comment", "").strip()
 
-        name = data.get("name", "").strip()
-        email_addr = data.get("email", "").strip()
-        mobile = data.get("mobile", "").strip()
-        user_type = data.get("userType", "").strip()
-        message = data.get("comment", "").strip()
-        recaptcha_token = data.get("recaptcha_token")
-
-        # -------- Basic validation --------
-        if not all([name, email_addr, mobile, user_type, message, recaptcha_token]):
+        if not all([name, email_addr, mobile, user_type, message]):
             return JsonResponse(
-                {"error": "Please fill all required fields ❌"},
+                {"error": "Please fill all required fields"},
                 status=400
             )
 
-        # -------- Verify reCAPTCHA --------
-        recaptcha_response = requests.post(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data={
-                "secret": settings.RECAPTCHA_SECRET_KEY,
-                "response": recaptcha_token,
-                "remoteip": request.META.get("REMOTE_ADDR"),
-            },
-            timeout=5,
+        # Save to DB (recommended)
+        Contact.objects.create(
+            name=name,
+            email=email_addr,
+            mobile=mobile,
+            user_type=user_type,
+            comment=message
         )
 
-        recaptcha_result = recaptcha_response.json()
-
-        # -------- HARD FAIL CONDITIONS --------
-        if (
-            not recaptcha_result.get("success")
-            or recaptcha_result.get("score", 0) < 0.7
-            or recaptcha_result.get("action") != "contact_form"
-        ):
-            return JsonResponse(
-                {"error": "reCAPTCHA verification failed ❌"},
-                status=400
-            )
-
-        # -------- Admin email --------
-        admin_subject = f"New Contact Enquiry from {name}"
-        admin_message = (
-            f"Name: {name}\n"
-            f"Email: {email_addr}\n"
-            f"Mobile: {mobile}\n"
-            f"I am a: {user_type}\n\n"
-            f"Message:\n{message}"
-        )
-
+        # Admin mail
         send_mail(
-            subject=admin_subject,
-            message=admin_message,
+            subject=f"New Contact Enquiry from {name}",
+            message=f"""
+            Name: {name}
+            Email: {email_addr}
+            Mobile: {mobile}
+            User Type: {user_type}
+
+            Message:
+            {message}
+            """,
             from_email="Aorbo Treks <hello@aorbotreks.com>",
             recipient_list=["hello@aorbotreks.com"],
             fail_silently=False,
         )
 
-        # -------- User auto-reply --------
+        # Auto-reply
         ctx = {
             "name": name,
-            "email_addr": email_addr,
             "current_year": datetime.now().year,
             "cta_url": "https://aorbotreks.com",
             "cta_label": "Visit Our Website",
+            "email": email_addr,
         }
 
         html_content = render_to_string("treks_app/mail.html", ctx)
@@ -473,21 +219,15 @@ def contact(request):
         reply.attach_alternative(html_content, "text/html")
         reply.send()
 
-        return JsonResponse({"success": True})
-
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"error": "Invalid JSON payload ❌"},
-            status=400
-        )
+        return JsonResponse({"message": "Message sent successfully ✅"})
 
     except Exception as e:
+        print("CONTACT ERROR:", e)
         return JsonResponse(
-            {"error": f"Failed to submit form: {str(e)}"},
+            {"error": "Something went wrong. Please try again later."},
             status=500
         )
 
-    
 def privacy_policy(request):
     return render(request, 'privacypolicy.html')
 def terms_and_conditions(request):
@@ -503,24 +243,116 @@ def index(request):
         'top_treks': top_treks,
     })
 
+# def search_trek(request):
+#     query = request.GET.get("q", "").strip()
+
+#     if not query:
+#         return redirect("home")
+
+#     trek = TrekList.objects.filter(
+#         Q(name__icontains=query) |
+#         Q(state__icontains=query) |
+#         Q(tags__name__icontains=query) |
+#         Q(trek_points__name__icontains=query)
+#     ).distinct().first()
+
+#     if trek:
+#         return redirect("card_trek_detail", slug=trek.id)
+
+#     return redirect("home")
+
+
+# def search_suggestions(request):
+#     query = request.GET.get("q", "").strip()
+
+#     if not query:
+#         return JsonResponse({"results": []})
+
+#     results = []
+#     seen = set()
+
+#     # Match trek name
+#     treks = (
+#         TrekList.objects
+#         .filter(name__istartswith=query)
+#         .order_by("name")[:10]
+#     )
+
+#     for trek in treks:
+#         if trek.id in seen:
+#             continue
+
+#         results.append({
+#             "label": trek.name,
+#             "type": "trek",
+#             "trek_name": trek.name,
+#             "url": reverse("card_trek_detail", args=[trek.id]),
+#         })
+#         seen.add(trek.id)
+
+#         if len(results) >= 10:
+#             return JsonResponse({"results": results})
+
+#     # 🔹 2. Match trek points (ManyToMany)
+#     treks_by_point = (
+#         TrekList.objects
+#         .filter(trek_points__name__istartswith=query)
+#         .distinct()[:10]
+#     )
+
+#     for trek in treks_by_point:
+#         if trek.id in seen:
+#             continue
+
+#         results.append({
+#             "label": trek.name,
+#             "type": "point",
+#             "trek_name": trek.name,
+#             "url": reverse("card_trek_detail", args=[trek.id]),
+#         })
+#         seen.add(trek.id)
+
+#         if len(results) >= 10:
+#             break
+
+#     return JsonResponse({"results": results})
 def search_trek(request):
     query = request.GET.get("q", "").strip()
 
     if not query:
         return redirect("home")
 
+    stop_words = [
+        "best", "top", "places", "place", "near",
+        "visit", "to", "trip", "trips", "treks", "trek"
+    ]
+
+    cleaned_query = query.lower()
+    for word in stop_words:
+        cleaned_query = cleaned_query.replace(word, " ")
+
+    cleaned_query = " ".join(cleaned_query.split())
+
+    # 🔴 SAFETY CHECK
+    if not cleaned_query:
+        return redirect("home")
+
     trek = TrekList.objects.filter(
-        Q(name__icontains=query) |
-        Q(state__icontains=query) |
-        Q(tags__name__icontains=query) |
-        Q(trek_points__name__icontains=query)
+        Q(name__icontains=cleaned_query) |
+        Q(state__icontains=cleaned_query) |
+        Q(tags__name__icontains=cleaned_query) |
+        Q(trek_points__name__icontains=cleaned_query)
     ).distinct().first()
 
     if trek:
-        return redirect("card_trek_detail", slug=trek.id)
+        return redirect("card_trek_detail", trek.id)
 
     return redirect("home")
 
+
+from django.http import JsonResponse
+from django.urls import reverse
+from django.db.models import Q
 
 def search_suggestions(request):
     query = request.GET.get("q", "").strip()
@@ -531,11 +363,32 @@ def search_suggestions(request):
     results = []
     seen = set()
 
-    # Match trek name
+    # ==============================
+    # 1️⃣ INTENT SUGGESTIONS (ALWAYS FIRST)
+    # ==============================
+    intent_templates = [
+        f"Best places near {query}",
+        f"Top treks near {query}",
+        f"Places to visit near {query}",
+        f"Weekend trips near {query}",
+        f"Adventure treks near {query}",
+    ]
+
+    for text in intent_templates:
+        results.append({
+            "label": text,
+            "type": "intent",
+            "url": reverse("search_trek") + f"?q={query}"
+        })
+
+    # ==============================
+    # 2️⃣ TREK NAME MATCH
+    # ==============================
     treks = (
         TrekList.objects
-        .filter(name__istartswith=query)
-        .order_by("name")[:10]
+        .filter(name__icontains=query)
+        .order_by("name")
+        .distinct()[:5]
     )
 
     for trek in treks:
@@ -550,14 +403,16 @@ def search_suggestions(request):
         })
         seen.add(trek.id)
 
-        if len(results) >= 10:
-            return JsonResponse({"results": results})
-
-    # 🔹 2. Match trek points (ManyToMany)
+    # ==============================
+    # 3️⃣ TREK POINT / STATE MATCH
+    # ==============================
     treks_by_point = (
         TrekList.objects
-        .filter(trek_points__name__istartswith=query)
-        .distinct()[:10]
+        .filter(
+            Q(trek_points__name__icontains=query) |
+            Q(state__icontains=query)
+        )
+        .distinct()[:5]
     )
 
     for trek in treks_by_point:
@@ -572,10 +427,8 @@ def search_suggestions(request):
         })
         seen.add(trek.id)
 
-        if len(results) >= 10:
-            break
-
     return JsonResponse({"results": results})
+
 
 def travel_your_way(request):
     selected_tag = request.GET.get("tag")
@@ -597,11 +450,17 @@ def travel_your_way(request):
 def card_trek_detail(request, slug):
     trek = get_object_or_404(TrekList, id=slug)
 
+    activities_list = []
+    if trek.activities:
+        activities_list = [a.strip() for a in trek.activities.split(",")]
+
     return render(
         request,
         "card_details.html",
         {
             "trek": trek,
             "TREKS": TrekList.objects.all(),
+            "activities_list": activities_list,
         }
     )
+
