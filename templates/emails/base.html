@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="
+  margin:0;
+  padding:0;
+  background:#f4f6f8;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center" style="padding:24px 0;">
+
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:28px;border-radius:6px;">
+
+<!-- HEADER -->
+<tr>
+<td style="padding-bottom:18px;">
+  <table cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="vertical-align:middle;padding-right:6px;">
+      </td>
+      <td style="text-align:center;">
+        <span style="font-size:16px;font-weight:700;color:#ff7a00;">
+          Aorbo Treks
+        </span>
+      </td>
+    </tr>
+  </table>
+</td>
+</tr>
+
+<!-- CONTENT -->
+<tr>
+<td style="font-size:14px;color:#333;line-height:1.6;">
+  {% block content %}{% endblock %}
+</td>
+</tr>
+
+<!-- QUERY -->
+<tr>
+<td style="padding:18px 0;">
+  <div style="background:#f4f8ff;padding:14px;border-left:4px solid #ff7a00;border-radius:5px;">
+    <strong>📩 Your Query</strong><br>
+    {{ message|linebreaksbr }}
+  </div>
+</td>
+</tr>
+
+<!-- FOOTER -->
+<tr>
+<td style="font-size:12px;color:#999;text-align:center;padding-top:18px;">
+  © {{ current_year }} Aorbo Treks<br>
+  <a href="{{ website }}" style="color:#999;text-decoration:none;">{{ website }}</a>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+
+</body>
+</html>

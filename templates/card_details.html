@@ -8,6 +8,197 @@
   <div class="container">
 
     <!-- TITLE -->
+    <div class="mb-2">
+      <h3 class="trekname">{{ trek.name }}</h3>
+    </div>
+
+    <div class="row g-2">
+
+      <!-- LEFT COLUMN -->
+     <!-- LEFT COLUMN -->
+<div class="col-12 col-md-6">
+
+  <!-- MAIN IMAGE -->
+  <div class="card shadow-lg rounded-4 overflow-hidden main-image-card mb-3">
+    {% with trek.images.first as hero %}
+      {% if hero and hero.image_url %}
+        <img src="{{ hero.image_url }}" class="img-fluid">
+      {% else %}
+        <img src="{% static 'images/default-trek.jpg' %}" class="img-fluid">
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- RELATED TREKS -->
+  {% if related_treks %}
+    <h6 class="fw-bold mb-2">Related Treks</h6>
+
+    {% for related in related_treks %}
+      <a href="{% url 'card_trek_detail' related.id %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-3 mb-2 related-item-card">
+          <div class="card-body p-2 d-flex align-items-center">
+
+            {% with related.images.first as img %}
+              {% if img and img.image_url %}
+                <img src="{{ img.image_url }}"
+                     class="rounded-2 me-3"
+                     style="width:50px;height:50px;object-fit:cover;"
+                     alt="{{ related.name }}">
+              {% else %}
+                <img src="{% static 'images/placeholder.jpg' %}"
+                     class="rounded-2 me-3"
+                     style="width:50px;height:50px;object-fit:cover;"
+                     alt="No image">
+              {% endif %}
+            {% endwith %}
+
+            <div class="flex-grow-1">
+              <h6 class="mb-0 fw-bold">{{ related.name }}</h6>
+              <small class="text-muted">{{ related.state }}</small>
+            </div>
+
+            <span class="text-primary small fw-semibold">View</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  {% endif %}
+
+</div> <!-- ✅ LEFT COLUMN CLOSED -->
+
+<!-- RIGHT COLUMN -->
+<div class="col-12 col-md-6">
+
+
+        <!-- DESCRIPTION -->
+        {% if trek.short_desc %}
+        <div class="card shadow-sm rounded-4 p-3 mb-3 description-box">
+          <h5>Description</h5>
+          <p class="mb-0">{{ trek.short_desc }}</p>
+        </div>
+        {% endif %}
+
+        <!-- INFO CARD -->
+        <div class="card shadow-lg rounded-4 p-3 info-card">
+
+          {% if trek.price_start %}
+          <div class="mb-3">
+            <h6>Starting Price</h6>
+            <span class="price-badge">Onwards *</span>
+            <div class="h4 fw-bold price">
+              ₹{{ trek.price_start }} <span class="price-text">/ person</span>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- OPERATORS -->
+          {% if trek.operators.exists %}
+          <div class="mb-3">
+            <h6>Trusted Operators</h6>
+            {% for op in trek.operators.all %}
+              <span class="badge operator-badge">{{ op }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- DURATION -->
+          <div class="mb-3 small">
+            {% if trek.duration_days %}
+              <strong>Duration:</strong> {{ trek.duration_days }}<br>
+            {% endif %}
+            {% if trek.operating_days %}
+              <strong>Operating days:</strong> {{ trek.operating_days }}
+            {% endif %}
+          </div>
+
+          <!-- PLACES & ACTIVITIES -->
+          <div class="row g-3">
+
+            {% if trek.trek_points.exists %}
+            <div class="col-6">
+              <h6>Famous Places</h6>
+              <ul class="ps-3 small">
+                {% for p in trek.trek_points.all %}
+                  <li>{{ p }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+
+            {% if trek.activities %}
+            <div class="col-6">
+              <h6>Activities</h6>
+              <ul class="ps-1 small">
+                {{ trek.activities|safe }}
+              </ul>
+            </div>
+            {% endif %}
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-bg { background:#f8f9fa; }
+
+.trekname {
+  font-size:28px;
+  font-weight:700;
+  background:linear-gradient(135deg,#ff7a18,#ff3d00);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.main-image-card img {
+  height:420px;
+  width:100%;
+  object-fit:cover;
+}
+
+.price { color:#007616; }
+
+.price-badge {
+  background:#ffcc00;
+  font-size:11px;
+  padding:4px 8px;
+  border-radius:6px;
+}
+
+.operator-badge {
+  background:#f87d28;
+  color:#fff;
+  padding:5px 12px;
+  border-radius:20px;
+  font-size:12px;
+}
+
+.description-box {
+  border-left:4px solid #ffa94d;
+}
+
+.related-item-card:hover {
+  transform:translateX(4px);
+  transition:.2s;
+}
+</style>
+{% endblock %}
+{% comment %} {% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ trek.name }} | Aorbo Treks{% endblock %}
+
+{% block content %}
+<section class="py-5 mt-4 detail-bg">
+  <div class="container">
+
+    <!-- TITLE -->
     <div class="text-center mb-4">
       <h1 class="mb-0">
         <span class="trekname" style="font-size:28px;font-weight:700;">
@@ -101,7 +292,7 @@
           {% if trek.duration_days or trek.operating_days %}
           <div class="mb-3" style="font-size:0.85rem;">
             {% if trek.duration_days %}
-              <div><strong>Duration:</strong> {{ trek.duration_days }}</div>
+              <div><strong>Duration:</strong> {{ trek.duration_days | title }}</div>
             {% endif %}
             {% if trek.operating_days %}
               <div><strong>Operating days:</strong> {{ trek.operating_days }}</div>
@@ -244,4 +435,4 @@
   .main-image-card img { height:240px; }
 }
 </style>
-{% endblock %}
+{% endblock %} {% endcomment %}

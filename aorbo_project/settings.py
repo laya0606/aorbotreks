@@ -303,6 +303,7 @@ CONTENT_SECURITY_POLICY = {
             "'unsafe-inline'",
             "'unsafe-eval'",
             'https://cdn.jsdelivr.net',
+            'https://cdnjs.cloudflare.com',
             'https://www.google.com',
             'https://www.gstatic.com',
             'https://aorbotreks.com',
@@ -312,7 +313,9 @@ CONTENT_SECURITY_POLICY = {
         
         'script-src-elem': (
             "'self'",
+            "'unsafe-inline'",
             'https://cdn.jsdelivr.net',
+            'https://cdnjs.cloudflare.com',
             'https://www.google.com',
             'https://www.gstatic.com',
             'https://aorbotreks.com',

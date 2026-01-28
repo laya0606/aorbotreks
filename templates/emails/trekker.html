@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Aorbo Treks</title>
+</head>
+
+<body style="
+  margin:0;
+  padding:0;
+  background:#f4f6f8;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center" style="padding:30px 0;">
+
+<table width="600" cellpadding="0" cellspacing="0"
+       style="background:#ffffff; border-radius:8px; padding:30px;">
+
+<!-- HEADER -->
+<tr>
+  <td align="center" style="padding-bottom:16px;">
+    <h2 style="
+      margin:0;
+      color:#ff7a00;
+      font-size:22px;
+      font-weight:700;
+      letter-spacing:0.5px;
+    ">
+      AORBO TREKS
+    </h2>
+  </td>
+</tr>
+
+
+<!-- QUERY ON TOP -->
+<tr>
+<td style="padding-top:25px;">
+
+<div style="
+    background:#fff6ed;
+    border-left:4px solid #ff7a00;
+    padding:15px;
+    border-radius:6px;
+">
+    <strong style="color:#333;">📩 Your Query</strong>
+    <p style="margin:8px 0 0; color:#222; line-height:1.6;">
+        {{ message|linebreaksbr }}
+    </p>
+</div>
+
+</td>
+</tr>
+
+<!-- CATEGORY DETAILS BELOW -->
+<tr>
+<td style="padding-top:25px; color:#333; line-height:1.6; font-size:15px;">
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>
+Thank you for reaching out to <strong>Aorbo Treks</strong>.
+Based on your query, we recommend exploring our
+<strong>{{ display_category }} treks</strong>.
+</p>
+
+<p style="text-align:center; margin:30px 0;">
+    <a href="{{ explore_link }}"
+       style="
+         background:#ff7a00;
+         color:#ffffff;
+         padding:12px 22px;
+         text-decoration:none;
+         border-radius:4px;
+         font-weight:bold;
+       ">
+       Explore {{ display_category }} Treks
+    </a>
+</p>
+Warm regards,<br>
+<strong>Team Aorbo Treks</strong>
+</p>
+
+</td>
+</tr>
+
+<!-- FOOTER START -->
+<tr>
+  <td style="background:#f4f7fe; padding:30px; text-align:center;">
+
+    <!-- Logo -->
+    <img
+      src="https://raw.githubusercontent.com/sahoojanmejaya-aorbotreks/assets/main/Logo.png"
+      alt="Aorbo Treks"
+      width="80"
+      style="display:block; margin:0 auto 12px;"
+    >
+
+    <!-- Copyright -->
+    <p style="margin:6px 0; font-size:13px; color:#777;">
+      © {{ current_year }} Aorbo Treks. All rights reserved.
+    </p>
+
+    <!-- Location -->
+    <p style="margin:4px 0; font-size:13px; color:#777;">
+      Hyderabad, Telangana, India
+    </p>
+
+    <!-- Website -->
+    <p style="margin:6px 0;">
+      <a href="https://www.aorbotreks.com"
+         style="color:#ff7a00; font-size:13px; text-decoration:none; font-weight:600;">
+        www.aorbotreks.com
+      </a>
+    </p>
+
+    <!-- Auto email note -->
+    <p style="margin-top:14px; font-size:12px; color:#aaa; line-height:1.5;">
+      This is an auto-generated email sent to
+      <strong>{{ email }}</strong>
+      for submitting a query on Aorbo Treks.
+    </p>
+
+  </td>
+</tr>
+<!-- FOOTER END -->
+</table>
+</td>
+</tr>
+</table>
+
+</body>
+</html>

@@ -4,68 +4,308 @@
 {% block title %}Travel Your Way | Aorbo Treks{% endblock %}
 
 {% block content %}
-<section class="py-5">
-  <div class="container">
-    <a href="{% url 'home' %}" class="btn btn-link mt-4 mb-3">
-      &larr; Back to Home
-    </a>
 
-    <h2 class="mb-2">
-      Travel Your Way –
-      <span class="text-warning">
-        {{ selected_tag|title }}
-      </span>
-    </h2>
+<!-- ================= PAGE HEADER ================= -->
+<section class="travel-header">
+    <div class="container travel-container">
 
-    <p class="text-muted mb-4">
-      Showing treks and trips that match your travel style.
-    </p>
+        <a href="{% url 'home' %}" class="back-link">
+            ← Back to Home
+        </a>
 
-    <div class="row g-4">
-      {% for trek in treks %}
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-          <div class="card h-100 border-0 shadow-sm rounded-4">
-            <div class="ratio ratio-4x3">
-              <img
-                src="{% static trek.image %}"
-                alt="{{ trek.name }}"
-                class="card-img-top object-fit-cover rounded-top-4"
-              >
-            </div>
-            <div class="card-body d-flex flex-column">
-              <h5 class="card-title mb-1">{{ trek.name }}</h5>
-              <p class="text-muted mb-2">📍 {{ trek.state }}</p>
+        <h1 class="travel-title">
+            Travel Your Way
+            <span class="tag-pill">{{ selected_tag|title }}</span>
+        </h1>
 
-              {% if trek.duration_days %}
-                <p class="small mb-1">⏱ {{ trek.duration_days }}</p>
-              {% endif %}
+        <p class="travel-subtitle">
+            Showing treks and trips that match your travel style.
+        </p>
 
-              {% if trek.operating_days %}
-                <p class="small mb-2">📅 {{ trek.operating_days }}</p>
-              {% endif %}
-
-              <p class="fw-semibold mb-3">
-                ₹{{ trek.price_start }} <span class="text-muted small">onwards</span>
-              </p>
-
-              <div class="mt-auto">
-                <a href="{% url 'card_trek_detail' trek.id %}"
-                   class="btn btn-warning w-100 fw-semibold">
-                  View Details
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      {% empty %}
-        <div class="col-12">
-          <p class="text-center text-muted">
-            No treks found for this travel style yet.
-            <a href="{% url 'home' %}">Go back and try another.</a>
-          </p>
-        </div>
-      {% endfor %}
     </div>
-  </div>
 </section>
+
+<!-- ================= TREKS ================= -->
+<section class="trek-listing">
+    <div class="container travel-container">
+        <div class="row g-4">
+
+            {% for trek in treks %}
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+
+                <a href="{% url 'card_trek_detail' trek.id %}"
+                   class="premium-card h-100 w-100 rounded-4 overflow-hidden text-decoration-none text-dark d-block">
+
+                    <!-- IMAGE -->
+                    <div class="trek-card-image-wrapper ratio ratio-4x3">
+                        <div class="image-inner">
+
+                            {% with trek.images.first as img %}
+                                {% if img and img.image_url %}
+                                    <img src="{{ img.image_url }}" alt="{{ trek.name }}" loading="lazy">
+                                {% else %}
+                                    <img src="{% static 'images/placeholder-trek.jpg' %}" alt="{{ trek.name }}">
+                                {% endif %}
+                            {% endwith %}
+
+                            <!-- PRICE (FLOATING LIKE INDEX) -->
+                            <div class="price-pill">
+                                <div class="price-onwards">ONWARDS*</div>
+                                <div class="price-value">₹{{ trek.price_start }}</div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- CONTENT -->
+                    <div class="p-4 card-content">
+                        <h5 class="fw-bold mb-1">{{ trek.name }}</h5>
+
+                        <p class="location-text mb-2">
+                            📍 {{ trek.state }}
+                        </p>
+
+                        <p class="days mb-1">
+                            <strong>Duration:</strong> {{ trek.duration_days }}
+                        </p>
+
+                        <p class="days">
+                            <strong>Departure:</strong> {{ trek.operating_days|upper }}
+                        </p>
+                    </div>
+
+                </a>
+
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+/* ================= PAGE CONTAINER RHYTHM ================= */
+.travel-container {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* ================= HEADER ================= */
+.travel-header {
+    padding-top: 120px;
+    padding-bottom: 44px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 14px;
+    font-weight: 500;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.travel-title {
+    font-size: clamp(2.3rem, 3vw, 2.9rem);
+    font-weight: 800;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.tag-pill {
+    background: linear-gradient(135deg, #ff7a18, #ff3d00);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.travel-subtitle {
+    margin-top: 10px;
+    color: #4b5563;
+    max-width: 620px;
+}
+
+/* ================= TREK LIST ================= */
+.trek-listing {
+    background: #f1f6f7;
+    padding: 56px 0 72px;
+}
+
+/* ================= PREMIUM CARD (MATCH INDEX) ================= */
+.premium-card {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.premium-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0,0,0,.12);
+}
+
+/* ================= IMAGE ================= */
+.trek-card-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+}
+
+.image-inner {
+    position: absolute;
+    inset: 0;
+}
+
+.image-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .5s ease;
+}
+
+.premium-card:hover img {
+    transform: scale(1.08);
+}
+
+/* ================= PRICE (FLOATING SAME AS INDEX) ================= */
+.price-pill {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff7a18, #ff3d00);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 40px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    animation: floatPrice 3s ease-in-out infinite;
+}
+
+.price-onwards {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    opacity: .9;
+}
+
+.price-value {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+@keyframes floatPrice {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* ================= CONTENT ================= */
+.card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.location-text {
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.days {
+    font-size: 13px;
+    color: #374151;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+    .travel-header {
+        padding-top: 100px;
+    }
+
+    .travel-container {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+}
+/* ================= MOBILE: SAME AS DESKTOP ================= */
+@media (max-width: 576px) {
+
+    /* Keep Bootstrap default container padding */
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Same grid spacing as desktop */
+    .row.g-3 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+
+    /* Keep same card shape */
+    .premium-card {
+        border-radius: 16px;
+    }
+
+    /* 🔥 SAME IMAGE RATIO AS DESKTOP */
+    .trek-card-image-wrapper.ratio {
+        --bs-aspect-ratio: 75%; /* 4:3 = EXACT desktop */
+    }
+
+    .trek-card-image-wrapper {
+        border-radius: 16px 16px 0 0;
+    }
+
+    /* SAME price pill */
+    .price-pill {
+        padding: 8px 16px;
+        font-size: 15px;
+        bottom: 18px;
+        right: 18px;
+        border-radius: 40px;
+    }
+
+    .price-onwards {
+        font-size: 8px;
+    }
+
+    /* SAME typography */
+    .card-content h5 {
+        font-size: 1.25rem;
+        line-height: 1.2;
+    }
+
+    .location-text {
+        font-size: 0.875rem;
+    }
+
+    .days {
+        font-size: 0.875rem;
+    }
+
+    /* SAME padding */
+    .card-content {
+        padding: 1rem !important;
+    }
+
+    /* Optional: reduce hover zoom only */
+    .premium-card:hover img {
+        transform: scale(1.05);
+    }
+}
+
+</style>
 {% endblock %}

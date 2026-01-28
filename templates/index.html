@@ -282,7 +282,7 @@
                         <div class="tyw-icon icon-beach">🌊</div>
                         <h3 class="tyw-card-title">Beach Trails</h3>
                         <p class="tyw-card-text">
-                            Walk along the coast, enjoy sunsets, and feel the sea breeze.
+                            Walk along the coast, enjoy sunsets and feel the sea breeze.
                         </p>
                     </div>
                 </a>
@@ -371,7 +371,6 @@
         </div>
     </div>
 </section>
-
 {% endblock %}
 
 
@@ -454,6 +453,12 @@
     .hero-overlay-content {
     z-index: 10; 
     }
+
+    .hero-search-wrapper {
+    position: relative;
+    z-index: 100000; /* FORCE ABOVE HERO OVERLAY */
+    }
+
 
 
     /* Hero text & search */
@@ -543,34 +548,20 @@
         fill: #ffffff;
     }
 
-    {% comment %} /* dropdown box */
-    .search-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: 4px;
-        background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
-        max-height: 260px;
-        overflow-y: auto;
-        z-index: 50;
-        display: none;
-    } {% endcomment %}
-
     .search-suggestions {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 8px);
     left: 0;
     right: 0;
-    margin-top: 6px;
+
     background: #ffffff;
     border-radius: 16px;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
-    max-height: 260px;
+
+    max-height: 280px;
     overflow-y: auto;
-    z-index: 9999;   /* 🔥 IMPORTANT */
+
+    z-index: 99999;   /* 🔥 CRITICAL */
     display: none;
 }
 
@@ -987,252 +978,74 @@
     background: #ffe4d1;
     color: #ff6a1a;
 }
+/* ================= MOBILE: SAME AS DESKTOP ================= */
+@media (max-width: 576px) {
 
+    /* Keep Bootstrap default container padding */
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Same grid spacing as desktop */
+    .row.g-3 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+
+    /* Keep same card shape */
+    .premium-card {
+        border-radius: 16px;
+    }
+
+    /* 🔥 SAME IMAGE RATIO AS DESKTOP */
+    .trek-card-image-wrapper.ratio {
+        --bs-aspect-ratio: 75%; /* 4:3 = EXACT desktop */
+    }
+
+    .trek-card-image-wrapper {
+        border-radius: 16px 16px 0 0;
+    }
+
+    /* SAME price pill */
+    .price-pill {
+        padding: 8px 16px;
+        font-size: 15px;
+        bottom: 18px;
+        right: 18px;
+        border-radius: 40px;
+    }
+
+    .price-onwards {
+        font-size: 8px;
+    }
+
+    /* SAME typography */
+    .card-content h5 {
+        font-size: 1.25rem;
+        line-height: 1.2;
+    }
+
+    .location-text {
+        font-size: 0.875rem;
+    }
+
+    .days {
+        font-size: 0.875rem;
+    }
+
+    /* SAME padding */
+    .card-content {
+        padding: 1rem !important;
+    }
+
+    /* Optional: reduce hover zoom only */
+    .premium-card:hover img {
+        transform: scale(1.05);
+    }
+}
 </style>
 {% endblock %}
 {% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    // ----- Live search suggestions -----
-    const input = document.getElementById("hero-search-input");
-    const box = document.getElementById("search-suggestions");
-
-    if (!input || !box) return;
-
-    let currentIndex = -1;
-    let currentResults = [];
-
-    function clearSuggestions() {
-        box.innerHTML = "";
-        box.style.display = "none";
-        currentIndex = -1;
-        currentResults = [];
-    }
-
-    function renderSuggestions(results) {
-        if (!results || !results.length) {
-            clearSuggestions();
-            return;
-        }
-
-        currentResults = results;
-        box.innerHTML = "";
-
-        results.forEach((item, idx) => {
-            const div = document.createElement("div");
-            div.className = "search-suggestion-item";
-            div.dataset.index = idx;
-
-            let secondary = "";
-
-            if (item.type === "intent") {
-                secondary = `<span class="search-suggestion-secondary">Suggested search</span>`;
-            } 
-            else if (item.type === "point" && item.trek_name) {
-                secondary = `<span class="search-suggestion-secondary">Near · ${item.trek_name}</span>`;
-            } 
-            else if (item.type === "trek") {
-                secondary = `<span class="search-suggestion-secondary">Trek</span>`;
-            }
-
-            div.innerHTML = `
-                <span class="search-suggestion-main">${item.label}</span>
-                ${secondary}
-            `;
-
-            // Use mousedown to avoid blur before click
-            div.addEventListener("mousedown", function () {
-                window.location.href = item.url;
-            });
-
-            box.appendChild(div);
-        });
-
-        box.style.display = "block";
-    }
-
-    // 🔍 INPUT HANDLER (SINGLE, RELIABLE PATH)
-    input.addEventListener("input", function () {
-        const q = this.value.trim();
-        if (!q) {
-            clearSuggestions();
-            return;
-        }
-
-        fetch("{% url 'search_suggestions' %}?q=" + encodeURIComponent(q))
-            .then(res => res.json())
-            .then(data => renderSuggestions(data.results || []))
-            .catch(err => {
-                console.error("Suggestion error:", err);
-                clearSuggestions();
-            });
-    });
-
-    // ⌨️ KEYBOARD NAVIGATION
-    input.addEventListener("keydown", function (e) {
-        const items = box.querySelectorAll(".search-suggestion-item");
-        if (!items.length) return;
-
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            currentIndex = (currentIndex + 1) % items.length;
-        } 
-        else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            currentIndex = (currentIndex - 1 + items.length) % items.length;
-        } 
-        else if (e.key === "Enter") {
-            if (currentIndex >= 0 && currentIndex < items.length) {
-                e.preventDefault();
-                items[currentIndex].dispatchEvent(new MouseEvent("mousedown"));
-            }
-            return;
-        } 
-        else if (e.key === "Escape") {
-            clearSuggestions();
-            return;
-        }
-
-        items.forEach((el, idx) => {
-            el.classList.toggle("active", idx === currentIndex);
-        });
-    });
-
-    // 🖱 CLICK OUTSIDE TO CLOSE
-    document.addEventListener("click", function (e) {
-        if (e.target !== input && !box.contains(e.target)) {
-            clearSuggestions();
-        }
-    });
-
-});
-</script>
+<script src="{% static 'js/index.js' %}" defer></script>
 {% endblock %}
-
-{% comment %} 
-{% block extra_js %}
-<script>
-
-    // Define global function for reliability
-
-    document.addEventListener("DOMContentLoaded", function () {
-
-        // ----- Live search suggestions -----
-        const input = document.getElementById("hero-search-input");
-        const box = document.getElementById("search-suggestions");
-        if (!input || !box) return;
-
-        let currentIndex = -1;
-        let currentResults = [];
-
-        function clearSuggestions() {
-            box.innerHTML = "";
-            box.style.display = "none";
-            currentIndex = -1;
-            currentResults = [];
-        }
-
-        function renderSuggestions(results) {
-            currentResults = results;
-            if (!results.length) {
-                clearSuggestions();
-                return;
-            }
-            box.innerHTML = "";
-            results.forEach((item, idx) => {
-                const div = document.createElement("div");
-                div.className = "search-suggestion-item";
-                div.dataset.index = idx;
-
-                let secondary = "";
-                if (item.type === "point" && item.trek_name) {
-                    secondary = `<span class="search-suggestion-secondary">Trek point · ${item.trek_name}</span>`;
-                } else if (item.type === "trek") {
-                    secondary = `<span class="search-suggestion-secondary">Trek</span>`;
-                }
-
-                div.innerHTML = `
-                <span class="search-suggestion-main">${item.label}</span>
-                ${secondary}
-            `;
-
-                div.addEventListener("mousedown", function () {
-                    window.location.href = item.url;
-                });
-
-                box.appendChild(div);
-            });
-            box.style.display = "block";
-        }
-
-        input.addEventListener("input", function () {
-            const q = this.value.trim();
-            if (!q) {
-                clearSuggestions();
-                return;
-            }
-
-            if (typeof SearchAPI === 'undefined' || !SearchAPI.fetchSuggestions) {
-                // fallback to original behavior if SearchAPI isn't present
-                fetch(`{% url 'search_suggestions' %}?q=` + encodeURIComponent(q))
-                    .then(res => res.json())
-                    .then(data => renderSuggestions(data.results || []))
-                    .catch(err => { console.error("Suggestion error:", err); clearSuggestions(); });
-                return;
-            }
-
-            SearchAPI.fetchSuggestions("{% url 'search_suggestions' %}", q)
-                .then(res => {
-                    if (res.ok) {
-                        renderSuggestions(res.body.results || []);
-                    } else {
-                        console.error('Suggestion error:', res.body && res.body.error);
-                        clearSuggestions();
-                    }
-                })
-                .catch(err => {
-                    console.error("Suggestion error:", err);
-                    clearSuggestions();
-                });
-        });
-
-        input.addEventListener("keydown", function (e) {
-            if (!currentResults.length) return;
-            const items = box.querySelectorAll(".search-suggestion-item");
-            if (!items.length) return;
-
-            if (e.key === "ArrowDown") {
-                e.preventDefault();
-                currentIndex = (currentIndex + 1) % items.length;
-            } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                currentIndex = (currentIndex - 1 + items.length) % items.length;
-            } else if (e.key === "Enter") {
-                if (currentIndex >= 0 && currentIndex < currentResults.length) {
-                    e.preventDefault();
-                    window.location.href = currentResults[currentIndex].url;
-                }
-                return;
-            } else if (e.key === "Escape") {
-                clearSuggestions();
-                return;
-            } else {
-                return;
-            }
-
-            items.forEach((el, idx) => {
-                el.classList.toggle("active", idx === currentIndex);
-            });
-        });
-
-        document.addEventListener("click", function (e) {
-            if (e.target !== input && !box.contains(e.target)) {
-                clearSuggestions();
-            }
-        });
-    });
-
-
-</script>
-{% endblock %} {% endcomment %}

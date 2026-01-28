@@ -9,6 +9,10 @@
         display: none;
     }
 
+    .hidden {
+        display: none;
+    }
+
     .msg-icon,
     .icon {
         height: 18px;
@@ -86,6 +90,53 @@
         color: #555;
     }
 
+    .lottie-animation {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        text-align: center;
+    }
+
+    .lottie-animation.show {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+
+    .lottie-animation.fadeOut {
+        animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+    }
+
+    #lottieContainer {
+        width: 500px;
+        height: 500px;
+        margin: 0 auto;
+    }
+
     @media (max-width: 768px) {
         h1 {
             font-size: 1.75rem;
@@ -146,7 +197,7 @@
                     <div class="mb-2">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email"
-                            pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
+                            pattern="[a-zA-Z0-9._%+\-]+@gmail\.com"
                             title="Enter a valid Gmail address (example@gmail.com)" required>
                         <div class="invalid-feedback">Enter a valid Gmail address.</div>
                     </div>
@@ -163,14 +214,39 @@
 
                     <!-- User Type -->
                     <div class="mb-2">
-                        <label for="userType" class="form-label">I am a</label>
-                        <select id="userType" name="userType" class="form-select" required>
-                            <option value="" disabled selected>Select one</option>
-                            <option value="Trekker">Trekker</option>
-                            <option value="Trek Organizer">Trek Organizer</option>
-                            <option value="Other">Other</option>
+                        <label for="user_type" class="form-label">I am a</label>
+                        <select id="user_type" name="user_type" class="form-select" onchange="handleUserType()" required>
+                            <option value="">-- Select --</option>
+                            <option value="trekker">Trekker</option>
+                            <option value="organizer">Trek Organizer</option>
+                            <option value="other">Other</option>
                         </select>
                         <div class="invalid-feedback">Please select your user type.</div>
+                    </div>
+
+                    <!-- Trek Category (hidden by default) -->
+                    <div id="trek_category_div" class="mb-2 hidden">
+                        <label for="trek_category" class="form-label">Trek Category</label>
+                        <select name="trek_category" id="trek_category" class="form-select">
+                            <option value="">-- Select Category --</option>
+                            <option value="adventure">Adventure Treks</option>
+                            <option value="weekend">Weekend Treks</option>
+                            <option value="nature">Nature Escapes</option>
+                            <option value="beach">Beach Treks</option>
+                            <option value="camping">Camping Treks</option>
+                            <option value="spiritual">Spiritual Treks</option>
+                        </select>
+                    </div>
+
+                    <!-- Vendor Portal Info -->
+                    <div id="vendor_info_div" class="mb-2 hidden">
+                        <label class="form-label">Vendor Portal</label>
+                        <p style="font-size:14px; color:#555;">
+                            For partnership and onboarding, please visit our vendor portal.
+                        </p>
+                        <a href="https://www.partner.aorbotreks.co.in" target="_blank" class="contact-link">
+                            www.partner.aorbotreks.co.in
+                        </a>
                     </div>
 
                     <!-- Message -->
@@ -185,7 +261,6 @@
                         <button type="submit" class="btn btn-primary" id="submitBtn">
                             <span id="btnText">Submit</span>
                         </button>
-                        <p id="formMessage" class="form-message"></p>
                     </div>
                 </form>
 
@@ -193,7 +268,7 @@
         </div>
 
         <div class="col-lg-6 d-flex align-items-center">
-            <img src="{% static 'images/contact-img.webp' %}" alt="Customer Support" class="contact-image">
+            <img src="{% static 'images/contact.webp' %}" alt="Customer Support" class="contact-image">
         </div>
     </div>
 
@@ -299,116 +374,15 @@
         </div>
     </div>
 </main>
+
+<!-- Lottie Animation Popup Modal -->
+<div id="lottieAnimation" class="lottie-animation">
+    <div id="lottieContainer"></div>
+</div>
+
 {% endblock %}
 {% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function () {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="{% static 'js/contact.js' %}" defer></script>
+{% endblock %} 
 
-    const contactForm = document.getElementById("contactForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const btnText = document.getElementById("btnText");
-    const formMessage = document.getElementById("formMessage");
-    const emailField = document.getElementById("email");
-
-    // 🔹 Live Gmail validation
-    emailField.addEventListener("input", function () {
-        const email = emailField.value.trim().toLowerCase();
-        emailField.setCustomValidity(
-            email && !email.endsWith("@gmail.com")
-                ? "Only Gmail addresses ending with @gmail.com are allowed."
-                : ""
-        );
-    });
-
-    // 🔹 CSRF helper
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let cookie of cookies) {
-                cookie = cookie.trim();
-                if (cookie.startsWith(name + "=")) {
-                    cookieValue = decodeURIComponent(
-                        cookie.substring(name.length + 1)
-                    );
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    // 🔹 Submit handler
-    contactForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        // Prevent double submit
-        if (submitBtn.disabled) return;
-
-        // HTML5 validation
-        if (!contactForm.checkValidity()) {
-            contactForm.classList.add("was-validated");
-            return;
-        }
-
-        const csrftoken = getCookie("csrftoken");
-        const formData = new FormData(contactForm);
-
-        // UI state
-        submitBtn.disabled = true;
-        btnText.innerText = "Submitting...";
-        formMessage.style.display = "none";
-
-        try {
-            const response = await fetch(contactForm.action, {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": csrftoken
-                },
-                body: formData
-            });
-
-            let result = {};
-            const contentType = response.headers.get("Content-Type") || "";
-            if (contentType.includes("application/json")) {
-                result = await response.json();
-            }
-
-            if (response.ok) {
-                const successMsg = result.message || "Message sent successfully ✅";
-
-                btnText.innerText = successMsg;
-                formMessage.innerText = successMsg;
-                formMessage.className = "form-message success";
-                formMessage.style.display = "block";
-
-                contactForm.reset();
-                contactForm.classList.remove("was-validated");
-
-            } else {
-                const errorMsg = result.error || "Submission failed ❌";
-
-                btnText.innerText = errorMsg;
-                formMessage.innerText = errorMsg;
-                formMessage.className = "form-message error";
-                formMessage.style.display = "block";
-            }
-
-        } catch (error) {
-            console.error(error);
-
-            btnText.innerText = "Network error ❌";
-            formMessage.innerText = "Network error ❌";
-            formMessage.className = "form-message error";
-            formMessage.style.display = "block";
-        }
-
-        // Revert button after 2s
-        setTimeout(() => {
-            btnText.innerText = "Submit";
-            submitBtn.disabled = false;
-        }, 2000);
-    });
-});
-</script>
-{% endblock %}
