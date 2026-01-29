@@ -3,15 +3,18 @@ from django.utils import timezone
 from django.urls import reverse
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
+from django.utils.html import mark_safe
+from django.conf import settings
+from ckeditor.fields import RichTextField
+from PIL import Image, ImageEnhance
 import bleach
 import uuid
 import mimetypes
-from .supabase_client import supabase
-from ckeditor.fields import RichTextField
-from io import BytesIO
-from PIL import Image, ImageEnhance
-from django.utils.html import mark_safe
 import io
+from io import BytesIO
+import os
+from django.template.defaultfilters import filesizeformat
+from .supabase_client import supabase
 
 class Visitor(models.Model):
     ip_address = models.GenericIPAddressField()
@@ -28,36 +31,34 @@ class Visitor(models.Model):
     def __str__(self):
         return f"{self.ip_address} @ {self.visit_time}"
 
+
 def validate_image_file_extension(value):
-    import os
-    from django.template.defaultfilters import filesizeformat
-    from django.conf import settings
+    """
+    Validate image file extension, size, and actual image content using Pillow.
+    """
 
-    ext = os.path.splitext(value.name)[1]
-    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
-    if not ext.lower() in valid_extensions:
-        raise ValidationError('Unsupported file extension. Allowed extensions are: ' + ', '.join(valid_extensions))
-    
-    import magic
+    VALID_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    ext = os.path.splitext(value.name)[1].lower()
+    if ext not in VALID_EXTENSIONS:
+        raise ValidationError(
+            f"Unsupported file extension. Allowed: {', '.join(VALID_EXTENSIONS)}"
+        )
+    if value.size > MAX_FILE_SIZE:
+        raise ValidationError(
+            f"File size too large. Max size is {filesizeformat(MAX_FILE_SIZE)}."
+        )
     try:
-        mime_type = magic.from_buffer(value.read(1024), mime=True)
-        value.seek(0) # Reset file pointer after reading
-    except Exception as e:
-        raise ValidationError(f"Could not determine file type: {e}")
+        value.seek(0)
+        img = Image.open(value)
+        img.verify()  
+    except Exception:
+        raise ValidationError("Uploaded file is not a valid image.")
+    finally:
+        value.seek(0) 
 
-    allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
-    if mime_type not in allowed_mime_types:
-        raise ValidationError(f'Unsupported file type. Detected: {mime_type}. Allowed types are: ' + ', '.join(allowed_mime_types))
-
-    # Max file size check (example, adjust as needed)
-    max_size = 5 * 1024 * 1024  # 5 MB
-    if value.size > max_size:
-        raise ValidationError(f'File size too large. Max size is {filesizeformat(max_size)}.')
-
-
-
-# Create your models here.
 class Contact(models.Model):
+    """Store contact form submissions."""
     name = models.CharField(max_length=100)
     email = models.EmailField(max_length=100)
     mobile = models.CharField(max_length=20)
@@ -71,6 +72,7 @@ class Contact(models.Model):
 
 
 class Blog(models.Model):
+    """Blog articles with watermarked images stored in Supabase."""
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     content = RichTextField()
@@ -453,18 +455,21 @@ class TrekList(models.Model):
     id = models.SlugField(primary_key=True, editable=False)
     name = models.CharField(max_length=200)
     state = models.CharField(max_length=100, blank=True, null=True)
+
     is_pinned = models.BooleanField(default=False)
     pin_priority = models.PositiveIntegerField(
         blank=True,
         null=True,
         help_text="Lower number = higher priority (1 comes first)"
     )
+
     image = models.CharField(max_length=500, blank=True, null=True)
     hero_image = models.CharField(max_length=500, blank=True, null=True)
     duration_days = models.CharField(max_length=100, blank=True, null=True)
+
     price_start = models.PositiveIntegerField(blank=True, null=True)
     currency = models.CharField(max_length=10, default="INR")
-    operating_days = models.CharField(max_length=200, blank=True, null=True, )
+    operating_days = models.CharField(max_length=200, blank=True, null=True)
 
     tags = models.ManyToManyField(Tag, blank=True)
     operators = models.ManyToManyField(Operator, blank=True)
@@ -472,9 +477,12 @@ class TrekList(models.Model):
 
     short_desc = models.TextField(blank=True, null=True)
     highlights = models.TextField(blank=True, null=True)
-    activities = models.TextField(blank=True, null=True)
+    activities = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma-separated values. Example: Trekking, Camping, Bonfire"
+    )
     related_treks = models.ManyToManyField('self', blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -491,8 +499,15 @@ class TrekList(models.Model):
 
         super().save(*args, **kwargs)
 
+    @property
+    def activities_list(self):
+        if not self.activities:
+            return []
+        return [a.strip() for a in self.activities.split(",") if a.strip()]
+
     def __str__(self):
         return self.name
+
  
 class TrekImage(models.Model):
     trek = models.ForeignKey(
@@ -561,5 +576,3 @@ class TrekImage(models.Model):
 
     def __str__(self):
         return self.caption or f"{self.trek.name} - Image"
-    
-    
